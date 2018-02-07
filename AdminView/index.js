@@ -56,12 +56,15 @@ function AdminView(socketController, expressApp, sessionObj) {
 
     this.db = null;
 
+    this.nsps = [];
+
     this.connectToDb(function (err, db) {
         if (err) throw new Error("Could not connect to database.");
         this.db = db;
 
         this.setupNamespaces(function (err, nsps) {
             if (err) console.log("Failed to initialize namespaces.");
+            this.nsps = nsps;
         });
 
         this.setupRoute();
@@ -85,6 +88,7 @@ AdminView.prototype.setupNamespaces = function (callback) {
 
     this.db.collection("users").find({}).toArray(function (err, users) {
         if (err) return callback(err, null);
+        var nsps = [];
         users.forEach(function (user) {
             console.log(user.username + " nsp added.");
             var nsp = new LectureNsp(user.username, user.username, this.ios);
@@ -92,9 +96,9 @@ AdminView.prototype.setupNamespaces = function (callback) {
                 autoSave: true
             }));
             nsp.listen();
+            nsps.push(nsp);
 
-
-            callback(null, this.nsps);
+            callback(null, nsps);
         }.bind(this));
     }.bind(this))
 
@@ -152,15 +156,6 @@ AdminView.prototype.setupApi = function () {
                 //req.session.username = user.username;
                 req.session.settings = settings ? settings : {};
 
-
-                if (req.body.token) {
-                    var info = this.oauthTokens[req.body.token];
-                    if (info) {
-                        req.session.redirectTo = "/#/v1/" + info.roomName;
-                        req.session.isInstructor = true;
-                        delete this.oauthTokens[req.body.token];
-                    }
-                }
 
                 res.json({username: user.username, redirect: req.session.redirectTo});
                 delete req.session.redirectTo;
@@ -265,6 +260,7 @@ AdminView.prototype.setupApi = function () {
         this.name = data.name;
         this.invite = !!(data.invite);
         this.roomName = data.roomName;
+        this.sid = moment.valueOf();
     }
 
     this.app.patch("/v1/api/classrooms", checkAuth, function (req, res) {
@@ -412,6 +408,12 @@ AdminView.prototype.setupApi = function () {
 
     }.bind(this);
 
+    this.app.get("/v1/api/namespace/:nsp", function (req, res) {
+        if (findOne(this.nsps, {name: req.params.nsp})) return res.json({});
+        else res.status(404).json({status: 404, message: "No such namespace"});
+    });
+
+
     this.app.get("/v1/api/namespace/:nsp/room/:roomName/track/:code", getUserTracking, function (req, res) {
 
         var resp = req.student;
@@ -511,7 +513,7 @@ AdminView.prototype.setupApi = function () {
 
     function TA(ta) {
         this.name = ta.name;
-        this.token = ta.token ? ta.token : uuidv4();
+        this.token = ta.token ? ta.token : uuidv4().substring(0, 8);
     }
 
     this.app.post("/v1/api/ta", checkAuth, function (req, res) {
@@ -569,23 +571,7 @@ AdminView.prototype.setupSocket = function () {
                 this.controllers[session.id].emit("stop_controller");
         }.bind(this));
 
-        socket.on("instructor_login", function (data, callback) {
-            var session = socket.handshake.session;
-            // if (!session.user) return socket.disconnect();
-            // setSessionVars({isInstructor: true, username: session.user.username});
-            var isInstructor = false;
-            if (socket.handshake.session.settings)
-                isInstructor = (socket.handshake.session.settings.chat.roomName !== data.roomId);
-            if (session.user) {
-                setSessionVars({isInstructor: isInstructor, username: session.user.username, isAdmin: !isInstructor});
-                callback({username: session.user.username});
-            } else {
-                var token = uuidv4();
-                this.oauthTokens[token] = {roomName: data.roomName};
-                callback({token: token});
-            }
 
-        }.bind(this));
 
         socket.on("new bot", function (data, callback) {
             if (this.secrets.indexOf(data.secret) !== -1) {

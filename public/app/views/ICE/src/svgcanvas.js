@@ -258,7 +258,7 @@ keyHash[">"] = ['>', '→', '2265', '2267', '226B', '226F'];
 keyHash["="] = ['=', '2260', '2261', '2243', '2248', '2245', '221D'];
 keyHash["~"] = ['~', '2243', '2248', '2245'];
 keyHash["+"] = ['+', 'B1', '2213', '2295'];
-keyHash["—"] = ['—', 'B1', '2213', '2296'];
+keyHash["−"] = ['−', 'B1', '2213', '2296'];
 keyHash["×"] = ['×', '2297'];
 keyHash["/"] = ['/', 'F7', '2298'];
 keyHash["."] = ['.', '95', '2218', '2235', '2234'];
@@ -861,7 +861,8 @@ getStrokedBBox = this.getStrokedBBox = function(elems) {
 // An array with all "visible" elements.
 var getVisibleElements = this.getVisibleElements = function(parent) {
   if(!parent) parent = $(svgcontent).children(); // Prevent layers from being included
-  if (parent.find("#canvas_background").length) parent.splice(0, 1) // Prevent background from being included
+    console.log(parent);
+  if (parent.find("#canvas_background").length) parent.splice(0, 1); // Prevent background from being included
   var contentElems = [];
   $(parent).children().each(function(i, elem) {
     try {
@@ -3368,6 +3369,8 @@ var getMouseTarget = this.getMouseTarget = function(evt) {
   // - in move/resize mode, the element's attributes which were affected by the move/resize are
   //   identified, a ChangeElementCommand is created and stored on the stack for those attrs
   //   this is done in when we recalculate the selected dimensions()
+  var getExpression = Tool.RecognitionTool.parse;
+  this.getExpression = Tool.RecognitionTool.parse;
   var mouseUp = function(evt)
   {
     canvas.addClones = false;
@@ -9633,43 +9636,43 @@ var moveCursorAbs = this.moveCursorAbs;
     var index = 0;
     for (var i = 0; i < expression.symbols.length; i++) {
       var symbol = expression.symbols[i];
-      if(symbol.region.contains) {
-        var x = symbol.region.contains.wall.left;
-        var y = symbol.region.contains.wall.top;
-        var height = symbol.region.contains.wall.bottom - y;
-        var width = symbol.region.above.wall.right - x;
+      if(symbol.region.CONTAINS) {
+        var x = symbol.region.CONTAINS.wall.left;
+        var y = symbol.region.CONTAINS.wall.top;
+        var height = symbol.region.CONTAINS.wall.bottom - y;
+        var width = symbol.region.ABOVE.wall.right - x;
         placeSnapPoint(x, y, width, height, index, "contains");
         index++;
       }
-      if(symbol.region.tleft) {
-        var x = symbol.region.above.wall.left;
-        var y = symbol.region.above.wall.bottom - 30;
+      if(symbol.region.TLEFT) {
+        var x = symbol.region.ABOVE.wall.left;
+        var y = symbol.region.ABOVE.wall.bottom - 30;
         var height = 25;
-        var width = symbol.region.above.wall.right - x;
+        var width = symbol.region.ABOVE.wall.right - x;
         placeSnapPoint(x, y, width, height, index, "above");
         index++;
       } 
-      else if(symbol.region.above) {
-        var x = symbol.region.supers.wall.left;
-        var y = symbol.region.supers.wall.bottom - 30;
+      else if(symbol.region.ABOVE) {
+        var x = symbol.region.SUPERS.wall.left;
+        var y = symbol.region.SUPERS.wall.bottom - 30;
         var height = 25;
-        var width = Math.min(25, symbol.region.supers.wall.right - x);
+        var width = Math.min(25, symbol.region.SUPERS.wall.right - x);
         placeSnapPoint(x, y, width, height, index, "supers");
         index++;
       }
 
-      if(symbol.region.bleft) {
-        var x = symbol.region.below.wall.left;
-        var y = symbol.region.below.wall.top + 5;
+      if(symbol.region.BLEFT) {
+        var x = symbol.region.BELOW.wall.left;
+        var y = symbol.region.BELOW.wall.top + 5;
         var height = 25;
-        var width = symbol.region.below.wall.right - x;
+        var width = symbol.region.BELOW.wall.right - x;
         placeSnapPoint(x, y, width, height, index, "below");
         index++;
-      } else if (symbol.region.below) {
-        var x = symbol.region.subsc.wall.left;
-        var y = symbol.region.subsc.wall.top + 5;
+      } else if (symbol.region.BELOW) {
+        var x = symbol.region.SUBSC.wall.left;
+        var y = symbol.region.SUBSC.wall.top + 5;
         var height = 25;
-        var width = Math.min(25, symbol.region.subsc.wall.right - x);
+        var width = Math.min(25, symbol.region.SUBSC.wall.right - x);
         placeSnapPoint(x, y, width, height, index, "subsc");
         index++;
       }
@@ -9869,8 +9872,8 @@ var moveCursorAbs = this.moveCursorAbs;
       return res;
     }.bind(this);
 
-    var Expression = getExpression();
-    Expression.apply(func, regionCondFunc, condFunc);
+    var expr = getExpression();
+    expr.apply(func, regionCondFunc, condFunc);
     /** canvas.undoMgr.beginUndoableChange('x', pushElems);
     for (var i = 0; i < pushElems.length; i++) {
         var newX = Number(pushElems[i].getAttribute('x')) + spacing;
@@ -9972,14 +9975,15 @@ var moveCursorAbs = this.moveCursorAbs;
       shortcutTimer = setTimeout(function(){
         ToggleFloatingLayer('floatingContent',0);
     }, 2);
-  }
+  };
   this.autoSpacing = true;
   this.toggleAutoSpacing = function(){
     this.autoSpacing = !this.autoSpacing;
     return this.autoSpacing;
-  }
+  };
 
 	this.keyPressed = function (key) {
+    
     if (key=="\u21e6") {
       moveCursor(-.25, 0);
       return;
@@ -10012,7 +10016,7 @@ var moveCursorAbs = this.moveCursorAbs;
 
     if (key=="\u232B") {
       lastKeyPress = '';
-      removeNearestToCursor()
+      removeNearestToCursor();
       return;
     }
     var shortcuts = keyHash[key];
@@ -10031,6 +10035,7 @@ var moveCursorAbs = this.moveCursorAbs;
         lastKeyPress = key;
         shortcutIndex = 0;
     }
+
 
     if(key in keyHash) {
       clearTimeout(shortcutTimer);

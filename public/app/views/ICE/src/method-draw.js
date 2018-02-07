@@ -398,7 +398,7 @@ var SOTP = 0;
         $.prompt = function(msg, txt, cb) { dbox('prompt', msg, cb, txt);};
       }());
 
-      var setSelectMode = function() {
+      var setSelectMode = function() {    
         var curr = $('.tool_button_current');
         if(curr.length && curr[0].id !== 'tool_select') {
           curr.removeClass('tool_button_current').addClass('tool_button');
@@ -822,7 +822,6 @@ var SOTP = 0;
             //$('#workarea').one("mousedown", function(){$('#tools_shapelib').hide()})
             //$('#workarea').one("mousedown", function(){$('#tools_mathlib').hide()});
             if ($('#tools_shapelib').is(":visible")) {
-
               toolButtonClick(show_sel, false);
             }
 
@@ -895,6 +894,7 @@ var SOTP = 0;
       }
 
       var resize_timer;
+      var extButtonKeeper;
 
       var extAdded = function(window, ext) {
 
@@ -1077,7 +1077,7 @@ var SOTP = 0;
             var button = $((btn.list || btn.type == 'app_menu')?'<li/>':'<div/>')
               .attr("id", id)
               .attr("title", btn.title)
-              .addClass(cls);
+              .addClass(cls);      
             if(!btn.includeWith && !btn.list) {
               if("position" in btn) {
                 $(parent).children().eq(btn.position).before(button);
@@ -1085,7 +1085,6 @@ var SOTP = 0;
                 if (btn.type != "menu" || !btn.after) button.appendTo(parent);
                 else $(parent).after(button);
               }
-
               if(btn.type =='mode_flyout') {
               // Add to flyout menu / make flyout menu
   //              var opts = btn.includeWith;
@@ -1202,8 +1201,13 @@ var SOTP = 0;
                     if(btn.includeWith) {
                       button.bind(name, func);
                     } else {
+                  
+                      if(button[0].id === 'tool_panzoom'){
+                        extButtonKeeper = button;
+                      }  
+                      
                       button.bind(name, function() {
-                        if(toolButtonClick(button)) {
+                        if(toolButtonClick(button)) {               
                           func();
                         }
                       });
@@ -1807,7 +1811,6 @@ var SOTP = 0;
       // - hides any flyouts
       // - adds the tool_button_current class to the button passed in
       var toolButtonClick = function(button, noHiding) {
-
         if ($(button).hasClass('disabled')) return false;
         if($(button).parent().hasClass('tools_flyout')) return true;
         var fadeFlyouts = fadeFlyouts || 'normal';
@@ -2223,8 +2226,9 @@ var SOTP = 0;
       };
 
       var clickConvert = function(){
+        var getBST = window.Tool.RecognitionTool.parse;
         if (toolButtonClick('#tool_convert')) {
-          var tex = getBST();
+          var tex = window.Tool.RecognitionTool.getTex();
           if($(window).width() <= 732) {
             clickSwap();
             raw_message = tex;
@@ -2237,7 +2241,7 @@ var SOTP = 0;
             parent.document.getElementById('textArea').value  = raw_message;
             parent.document.getElementById('send-message-button').click();
           } else {
-            parent.preview.window.svg_source = btoa($("#svgcontent").find(".active-layer").html());
+            parent.preview.window.svg_source = btoa(unescape(encodeURIComponent($("#svgcontent").find(".active-layer").html())));
             parent.preview.window.previewEditor.setValue(tex);
           }
         }
@@ -2439,7 +2443,7 @@ var SOTP = 0;
       var convertAndSend = function(){
           $("#send-sheet").addClass("shown");
           $("#send-sheet-background").addClass("shown");
-          $("#send-sheet-equation").html(getBST());
+          $("#send-sheet-equation").html(Tool.RecognitionTool.getTex());
           MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
       };
       var matrixBuilder = function(col, row){
@@ -2528,6 +2532,15 @@ var SOTP = 0;
             placeHolder.style.display = 'block';
           }        
       };
+      
+      var zoomOutBtn= function(){
+        extButtonKeeper.click();
+        svgCanvas.setMode("pan");
+        var svg = $("#svgcanvas");    
+          svg.css({
+              cursor: "zoom-out"
+          });            
+    };
 
       var sendAsImage = function(){
           var svgSource = "<svg id='pre-render-svg' style='background-color: #FFFFFF;'><g>" + $("#svgcontent").find(".active-layer").html() + "</g></svg>";
@@ -3524,6 +3537,7 @@ var SOTP = 0;
           {sel:'#copy_save_done', fn: cancelOverlays, evt: 'click'},
           {sel:'#tool_send_as_image', fn: sendAsImage, evt: 'click'},
           {sel:'#tool_matrix', fn: toggleMatrixSizeBtn, evt: 'click'},
+          {sel:'#tool_zoom_out', fn: zoomOutBtn, evt: 'click'},
           {sel:'#send-sheet-equation-button', fn: clickConvert, evt: 'click'},
           {sel:'#send-sheet-image-button', fn: sendAsImage, evt: 'click'},
           {sel:'#tool_send_mobile', fn: convertAndSend, evt: 'click'},
@@ -3537,8 +3551,6 @@ var SOTP = 0;
           {key: 'ctrl+right', fn: function(){rotateSelected(1,1)}},
           {key: 'ctrl+shift+left', fn: function(){rotateSelected(0,5)}},
           {key: 'ctrl+shift+right', fn: function(){rotateSelected(1,5)}},
-          {key: 'shift+O', fn: selectPrev},
-          {key: 'shift+P', fn: selectNext},
           {key: [modKey+'+', true], fn: function(){zoomImage(2);}},
           {key: [modKey+'-', true], fn: function(){zoomImage(.5);}},
           {key: ['up', true], fn: function(){svgCanvas.moveCursor(0,-1);}}, //**MDP
@@ -3586,7 +3598,7 @@ var SOTP = 0;
   					{key: ['h', true], fn: function(){svgCanvas.keyPressed('h');}},
   					{key: ['shift+h', true], fn: function(){svgCanvas.keyPressed('H');}},
   					{key: ['i', true], fn: function(){svgCanvas.keyPressed('i');}},
-  					{key: ['shift+i', true], fn: function(){svgCanvas.keyPressed('i');}},
+  					{key: ['shift+i', true], fn: function(){svgCanvas.keyPressed('I');}},
   					{key: ['j', true], fn: function(){svgCanvas.keyPressed('j');}},
   					{key: ['shift+j', true], fn: function(){svgCanvas.keyPressed('J');}},
   					{key: ['k', true], fn: function(){svgCanvas.keyPressed('k');}},
@@ -3631,7 +3643,7 @@ var SOTP = 0;
   					{key: ['7', true], fn: function(){svgCanvas.keyPressed('7');}},
   					{key: ['8', true], fn: function(){svgCanvas.keyPressed('8');}},
             {key: ['9', true], fn: function(){svgCanvas.keyPressed('9');}},
-            {key: ['shift+8', true], fn: function(){svgCanvas.keyPressed('×');}},
+            //{key: ['shift+8', true], fn: function(){svgCanvas.keyPressed('×');}},
             {key: [String.fromCharCode(190), true], fn: function(){svgCanvas.keyPressed('.');}},
             {key: [String.fromCharCode(191), true], fn: function(){svgCanvas.keyPressed('//');}},
             {key: ['ctrl+l', true], fn: function() {var at = svgCanvas.toggleAutoSpacing(); alert("Auto-spacing is " +  (at ? "on" : "off") + ".")}},
@@ -3641,13 +3653,17 @@ var SOTP = 0;
             {key: ['shift+.', true], fn: function(){svgCanvas.keyPressed('>');}},
   					{key: '.', fn: function(){svgCanvas.keyPressed('.');}},
   					{key: 'space', fn: function(){svgCanvas.keyPressed(' ');}},
-  					{key: '-', fn: function(){svgCanvas.keyPressed('—');}},
-            {key: String.fromCharCode(189), fn: function(){svgCanvas.keyPressed('—');}},
+  					{key: '-', fn: function(){svgCanvas.keyPressed('-');}},
+            {key: String.fromCharCode(189), fn: function(){svgCanvas.keyPressed('−');}},
   					{key: 'shift+(', fn: function(){svgCanvas.keyPressed('(');}},
   					{key: 'shift+)', fn: function(){svgCanvas.keyPressed(')');}},
   					{key: '[', fn: function(){svgCanvas.keyPressed('[');}},
   					{key: ']', fn: function(){svgCanvas.keyPressed(']');}},
   					{key: ['shift+'+String.fromCharCode(187), true], fn: function(){svgCanvas.keyPressed('+');}},
+                    {key: '+', fn: function(){svgCanvas.keyPressed('+');}},
+            {key: ['*', true], fn: function(){svgCanvas.keyPressed('×');}},
+            {key: '/', fn: function(){svgCanvas.keyPressed('/');}},
+
   					{key: [String.fromCharCode(187), true], fn: function(){svgCanvas.keyPressed('=');}},
             {key: ['shift+'+String.fromCharCode(188), true], fn: function(){svgCanvas.keyPressed('<');}},
             {key: ['shift+'+String.fromCharCode(190), true], fn: function(){svgCanvas.keyPressed('>');}},

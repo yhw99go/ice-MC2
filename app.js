@@ -196,12 +196,12 @@ chat.on('connection', function(socket){
 		//if (!data.isJoin) clients = {sockets:[]};
 		if(findClient(clients, data.username))
 			{
-				callback({success:false, message: "Use different username."});
+				callback({success:false, message: "Use a different username."});
 			} else {
 				if (data.userAvatar && isNaN(data.userAvatar)) return callback({success: false});
 				else data.userAvatar = "Avatar"+data.userAvatar+".jpg";
 
-            	if (socket.handshake.session.userAvatar) {
+            	if (socket.handshake.session.userAvatar && !data.userAvatar) {
 
             		data.userAvatar = socket.handshake.session.userAvatar;
                 }
